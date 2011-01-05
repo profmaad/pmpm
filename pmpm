@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+
+require 'trollop'
+
+require 'password_manager.rb'
+require 'password_manager_options.rb'
+require 'password_manager_shell.rb'
+
+require 'pp'
+
+options = Trollop::with_standard_exception_handling COMMAND_LINE_OPTIONS_PARSER do
+  COMMAND_LINE_OPTIONS_PARSER.parse ARGV
+end
+
+@db_file = options[:database]
+
+@password_manager = PasswordManager.new(@db_file)
+
+if @password_manager.nil? or !@password_manager.valid?
+  puts "failed to initialize, going down"
+  exit 1
+end
+
+ARGV.clear
+if !options[:interactive]
+  ARGV.concat COMMAND_LINE_OPTIONS_PARSER.leftovers
+end
+shell = PasswordManagerShell.new(@password_manager)
+shell.cmdloop
