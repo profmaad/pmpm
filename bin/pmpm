@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+$: << File.expand_path(File.dirname(__FILE__) + "/../lib")
+
 require 'rubygems'
 
 require 'trollop'
@@ -8,13 +10,15 @@ require 'password_manager.rb'
 require 'password_manager_options.rb'
 require 'password_manager_shell.rb'
 
-require 'pp'
-
 options = Trollop::with_standard_exception_handling COMMAND_LINE_OPTIONS_PARSER do
   COMMAND_LINE_OPTIONS_PARSER.parse ARGV
 end
 
-@db_file = options[:database]
+if options[:database]
+	@db_file = options[:database]
+else
+	@db_file = "#{DEFAULT_DIR}/#{DEFAULT_DB}"
+end
 
 @password_manager = PasswordManager.new(@db_file)
 

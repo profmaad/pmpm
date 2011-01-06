@@ -1,7 +1,7 @@
 require 'test/unit'
 
-$LOAD_PATH << '../'
-require '../password_manager_shell.rb'
+$: << File.expand_path(File.dirname(__FILE__) + "/../lib")
+require 'password_manager_shell.rb'
 
 class TestPasswordManagerShell < Test::Unit::TestCase
   def setup
