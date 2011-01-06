@@ -116,7 +116,75 @@ class PasswordManagerShell < Cmd
   doc :mv, "move items to new position"
   def do_mv(args)
     options, args = extract_options(:mv, args)
-    return if options.nil?
+    if args.empty?
+      puts "No items given"
+    elsif args.length < 2
+      puts "Destination missing"
+    else
+      destination = args.pop.split("/")
+      sources = args.map { |item| item.split("/") }
+
+      dest_path = construct_new_working_dir(destination, false)
+      if dest_path.nil?
+        puts "Destination doesn't exist"
+      elsif dest_path.last.nil? and sources.length > 1
+        puts "Multiple sources but destination isn't a directory"
+      elsif dest_path.last.nil?
+        dest_path.pop       
+
+        dest_node = @password_manager.get_node(destination.last, (dest_path.last.nil? ? nil : dest_path.last.to_i))
+        dest_name = destination.last
+        dest_dir = (dest_path.last.nil? ? nil : dest_path.last.to_i)
+        
+        source = sources[0]
+        source_path = construct_new_working_dir(source, false)
+        if source_path.nil?
+          puts "Source '#{source.join('/')}' doesn't exist"
+        elsif source_path.last.nil?
+          source_path.pop
+          source_node = @password_manager.get_node(source.last, (source_path.last.nil? ? nil : source_path.last.to_i))
+          if source_node.nil?
+            puts "Source '#{source.join('/')}' doesn't exist"
+          else
+            # move source to dest
+            unless dest_node.nil?
+              really_overwrite = @highline.agree("Do you really want to overwrite '#{destination.join('/')}'? ")
+              return unless really_overwrite
+            end
+            
+            source_node.directory = dest_dir
+            source_node.name = dest_name
+            @password_manager.delete_node(dest_node.id) unless dest_node.nil?
+            @password_manager.save(source_node)
+          end
+        else
+          puts "Can't overwrite node with directory"
+        end
+      else
+        dest = dest_path.last
+
+        sources.each do |source|
+          source_path = construct_new_working_dir(source, false)
+          if source_path.nil?
+            puts "Source '#{source.join('/')}' doesn't exist"
+          elsif source_path.last.nil?
+            source_path.pop
+            source_node = @password_manager.get_node(source.last, (source_path.last.nil? ? nil : source_path.last.to_i))
+            if source_node.nil?
+              puts "Source '#{source.join('/')}' doesn't exist"
+            else
+              # move source to dest
+              source_node.directory = dest.id
+              @password_manager.save(source_node)
+            end
+          else
+            source_dir = source_path.last
+            source_dir.parent = dest.id
+            @password_manager.save(source_dir)
+          end
+        end
+      end
+    end
   end
   
   doc :find, "find nodes"
