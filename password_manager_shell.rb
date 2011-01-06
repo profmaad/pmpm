@@ -27,11 +27,12 @@ class PasswordManagerShell < Cmd
   doc :ls, "List directory"
   def do_ls(args)
     options, args = extract_options(:ls, args)
+    return if options.nil?
     if args.empty?
       ls([], options[:long], options[:recursive])
     else
       dirs = args[0].split("/")
-      ls(dirs, ptions[:long], options[:recursive])
+      ls(dirs, options[:long], options[:recursive])
     end
   end
   doc :ll, "alias for ls -l"
@@ -62,6 +63,7 @@ class PasswordManagerShell < Cmd
   doc :mkdir, "Create directory"
   def do_mkdir(args)
     options, args = extract_options(:mkdir, args)
+    return if options.nil?
     if args.empty?
       puts "No directory given"
     else
@@ -113,36 +115,55 @@ class PasswordManagerShell < Cmd
   end
   doc :mv, "move items to new position"
   def do_mv(args)
-    options, args = extract_options(:find, args)
+    options, args = extract_options(:mv, args)
+    return if options.nil?
   end
   
   doc :find, "find nodes"
   def do_find(args)
     options, args = extract_options(:find, args)
+    return if options.nil?
   end
 
   doc :add, "Add a new node"
   def do_add(args)
-    if args.nil? or args.empty?
+    options, args = extract_options(:add, args)
+    return if options.nil?
+    if args.empty?
       puts "No node given"
     else
-      dirs = args.split("/")
+      dirs = args[0].split("/")
       node_name = dirs.pop
       new_dirs = construct_new_working_dir(dirs, true)
       if new_dirs.nil?
         puts "No such node"
+      elsif !@password_manager.get_node(node_name, (new_dirs.last.nil? ? nil : new_dirs.last.to_i)).nil? or !@password_manager.get_directory(node_name, (new_dirs.last.nil? ? nil : new_dirs.last.to_i)).nil?
+        puts "Name already exists"
       else
-        node = edit_node(PasswordNode.create( 'name' => node_name, 'directory' => (new_dirs.last.nil? ? nil : new_dirs.last.to_i)), false) # user already entered the name, no need to ask again
+        node_data = Hash.new
+        node_data['name'] = node_name
+        node_data['url'] = options[:url]
+        node_data['username'] = options[:user]
+        node_data['password'] = options[:pass]
+        node_data['email'] = options[:email]
+        node_data['comment'] = options[:comment]
+        node_data['directory'] = (new_dirs.last.nil? ? nil : new_dirs.last.to_i)
+        node = PasswordNode.create(node_data)
+        unless options[:batch]
+          node = edit_node(node, options.merge({:name => node_name})) # user already entered the name, no need to ask again
+        end
         @password_manager.save(node)
       end
     end
   end
   doc :edit, "Edit a node"
   def do_edit(args)
-    if args.nil? or args.empty?
+    options, args = extract_options(:edit, args)
+    return if options.nil?
+    if args.empty?
       puts "No node given"
     else
-      dirs = args.split("/")
+      dirs = args[0].split("/")
       node_name = dirs.pop
       new_dirs = construct_new_working_dir(dirs, true)
       if new_dirs.nil?
@@ -152,18 +173,28 @@ class PasswordManagerShell < Cmd
         if node.nil?
           puts "No such node"
         else
-          changed_node = edit_node(node)
-          @password_manager.save(changed_node)
+          node.name = options[:name] unless options[:name].nil?
+          node.url = options[:url] unless options[:url].nil?
+          node.username = options[:user] unless options[:user].nil?
+          node.password = options[:pass] unless options[:pass].nil?
+          node.email = options[:email] unless options[:email].nil?
+          node.comment = options[:comment] unless options[:comment].nil?
+          unless options[:batch]
+            node = edit_node(node, options)
+          end
+          @password_manager.save(node)
         end
       end
     end
   end
   doc :show, "Display a node"
   def do_show(args)
-    if args.nil? or args.empty?
+    options, args = extract_options(:show, args)
+    return if options.nil?
+    if args.empty?
       puts "No node given"
     else
-      dirs = args.split("/")
+      dirs = args[0].split("/")
       node_name = dirs.pop
       new_dirs = construct_new_working_dir(dirs, true)
       if new_dirs.nil?
@@ -173,7 +204,8 @@ class PasswordManagerShell < Cmd
         if node.nil?
           puts "No such node"
         else
-          print_node(node)
+          no_requested_values = (!options[:name] and !options[:url] and !options[:user] and !options[:pass] and !options[:email] and !options[:comment])
+          print_node(node, (no_requested_values ? {} : options), options[:quiet])
         end
       end
     end
@@ -374,29 +406,38 @@ class PasswordManagerShell < Cmd
     end
   end
 
-  def print_node(node)
-    output_array = Array.new
-    output_array += ["Name:", node.name] unless (node.name.nil? or node.name.empty?)
-    output_array += ["URL:", node.url] unless (node.url.nil? or node.url.empty?)
-    output_array += ["Username:", node.username] unless (node.username.nil? or node.username.empty?)
-    output_array += ["Password:", node.password] unless (node.password.nil? or node.password.empty?)
-    output_array += ["E-Mail:", node.email] unless (node.email.nil? or node.email.empty?)
-    output_array += ["Comment:", node.comment] unless (node.comment.nil? or node.comment.empty?)
-
-    print @highline.list(output_array, :columns_across, 2)
+  def print_node(node, requested_values = {}, quiet = false)
+    if quiet
+      puts node.name if (requested_values.empty? or requested_values[:name])
+      puts node.url if (requested_values.empty? or requested_values[:url])
+      puts node.username if (requested_values.empty? or requested_values[:user])
+      puts node.password if (requested_values.empty? or requested_values[:pass])
+      puts node.email if (requested_values.empty? or requested_values[:email])
+      puts node.comment if (requested_values.empty? or requested_values[:comment])
+    else
+      output_array = Array.new
+      output_array += ["Name:", node.name] unless (node.name.nil? or node.name.empty? or (!requested_values.empty? and !requested_values[:name]))
+      output_array += ["URL:", node.url] unless (node.url.nil? or node.url.empty? or (!requested_values.empty? and !requested_values[:url]))
+      output_array += ["Username:", node.username] unless (node.username.nil? or node.username.empty? or (!requested_values.empty? and !requested_values[:user]))
+      output_array += ["Password:", node.password] unless (node.password.nil? or node.password.empty? or (!requested_values.empty? and !requested_values[:pass]))
+      output_array += ["E-Mail:", node.email] unless (node.email.nil? or node.email.empty? or (!requested_values.empty? and !requested_values[:email]))
+      output_array += ["Comment:", node.comment] unless (node.comment.nil? or node.comment.empty? or (!requested_values.empty? and !requested_values[:comment]))
+      
+      print @highline.list(output_array, :columns_across, 2)
+    end
   end
-  def edit_node(node, ask_name = true)
-    if ask_name
+  def edit_node(node, given_values = {})
+    unless given_values[:name]
       node.name = @highline.ask("Name? ") do |q|
         q.default = node.name
         q.validate = Proc.new { |answer| !answer.include?("/") }
       end
     end
-    node.url = @highline.ask("URL? ") { |q| q.default = node.url }
-    node.username = @highline.ask("Username? ") { |q| q.default = node.username }
-    node.password = @highline.ask("Password? ") { |q| q.default = node.password }
-    node.email = @highline.ask("E-Mail? ") { |q| q.default = node.email }
-    node.comment = @highline.ask("Comment? ") { |q| q.default = node.comment }
+    node.url = @highline.ask("URL? ") { |q| q.default = node.url } unless given_values[:url]
+    node.username = @highline.ask("Username? ") { |q| q.default = node.username } unless given_values[:user]
+    node.password = @highline.ask("Password? ") { |q| q.default = node.password } unless given_values[:pass]
+    node.email = @highline.ask("E-Mail? ") { |q| q.default = node.email } unless given_values[:email]
+    node.comment = @highline.ask("Comment? ") { |q| q.default = node.comment } unless given_values[:comment]
 
     return node
   end
