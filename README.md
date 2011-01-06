@@ -16,7 +16,6 @@ So far this is just a simple password manager written in ruby.
 
  * rubygems
  * trollop
- * choice
  * ruby-password
  * highline
  * cmd
