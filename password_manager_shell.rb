@@ -79,26 +79,31 @@ class PasswordManagerShell < Cmd
     if args.empty?
       puts "No directory given"
     else
-      dirs = args[0].split("/")
-      mkdir(dirs, options[:parents])
+      args.each do |arg|
+        dirs = arg.split("/")
+        mkdir(dirs, options[:parents])
+      end
     end
   end
   doc :rmdir, "Remove empty directory"
   def do_rmdir(args)
-    if args.nil? or args.empty?
+    options, args = extract_options(:mkdir, args)
+    if args.empty?
       puts "No directory given"
     else
-      dirs = args.split("/")
-      new_dirs = construct_new_working_dir(dirs, true)
-      if new_dirs.nil?
-        puts "No such directory"
-      else
-        dir_to_delete = new_dirs.last
-        # check if dir is empty
-        if @password_manager.list_directory(dir_to_delete).empty?
-          @password_manager.delete_directory(dir_to_delete)
+      args.each do |arg|
+        dirs = arg.split("/")
+        new_dirs = construct_new_working_dir(dirs, true)
+        if new_dirs.nil?
+          puts "#{arg}: No such directory"
         else
-          puts "Directory is not empty"
+          dir_to_delete = new_dirs.last
+          # check if dir is empty
+          if @password_manager.list_directory(dir_to_delete).empty?
+            @password_manager.delete_directory(dir_to_delete)
+          else
+            puts "#{arg} is not empty"
+          end
         end
       end
     end
