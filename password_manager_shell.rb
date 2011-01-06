@@ -31,8 +31,20 @@ class PasswordManagerShell < Cmd
     if args.empty?
       ls([], options[:long], options[:recursive])
     else
-      dirs = args[0].split("/")
-      ls(dirs, options[:long], options[:recursive])
+      args.each do |arg|
+        dirs = arg.split("/")
+        unless args.length == 1
+          if dirs.empty?
+            puts ".:"
+          elsif dirs[0].empty?
+            puts "#{arg}:"
+          else
+            puts "./#{arg}:"
+          end
+        end
+        ls(dirs, options[:long], options[:recursive])
+        puts "" unless arg == args.last
+      end
     end
   end
   doc :ll, "alias for ls -l"
@@ -412,7 +424,7 @@ class PasswordManagerShell < Cmd
   
 
   def ls(dirs, long = false, recursive = false)
-    dirs_string = dirs
+    dirs_string = dirs.dup
     dirs = construct_new_working_dir(dirs)
     if dirs.nil?
       puts "No such directory"
@@ -423,6 +435,8 @@ class PasswordManagerShell < Cmd
     if recursive
       if dirs_string.empty?
         puts ".:"
+      elsif dirs_string[0].empty?
+        puts "#{dirs_string.join('/')}:"
       else
         puts "./#{dirs_string.join('/')}:"
       end
