@@ -132,6 +132,86 @@ class PasswordManager
     return PasswordNode.create(result)
   end
 
+  def find_nodes(properties)
+    where_clauses = Array.new
+
+    if properties[:directory]
+      where_clauses.push("directory = #{properties[:parent].to_i}")
+    else
+      where_clauses.push("directory IS NULL")      
+    end
+    if properties[:name]
+      name_quoted = SQLite3::Database.quote(properties[:name])
+
+      where_clauses.push("name LIKE '#{name_quoted}'")
+    end
+    if properties[:url]
+      url_quoted = SQLite3::Database.quote(properties[:url])
+
+      where_clauses.push("url LIKE '#{url_quoted}'")
+    end
+    if properties[:user]
+      user_quoted = SQLite3::Database.quote(properties[:user])
+
+      where_clauses.push("username LIKE '#{user_quoted}'")
+    end
+    if properties[:pass]
+      pass_quoted = SQLite3::Database.quote(properties[:pass])
+
+      where_clauses.push("password LIKE '#{pass_quoted}'")
+    end
+    if properties[:email]
+      email_quoted = SQLite3::Database.quote(properties[:email])
+
+      where_clauses.push("email LIKE '#{email_quoted}'")
+    end
+    if properties[:comment]
+      comment_quoted = SQLite3::Database.quote(properties[:comment])
+
+      where_clauses.push("comment LIKE '#{comment_quoted}'")
+    end
+
+    if where_clauses.empty?
+      result = @db.execute("SELECT * FROM nodes;")
+    else
+      where_clause = where_clauses.join(" AND ")
+      
+      result = @db.execute("SELECT * FROM nodes WHERE #{where_clause};")
+    end
+
+    result.map! { |row| PasswordNode.create(row) }
+    result.sort! { |a,b| a.name <=> b.name }
+
+    return result
+  end
+  def find_directories(properties)
+    where_clauses = Array.new
+
+    if properties[:parent]
+      where_clauses.push("parent = #{properties[:parent].to_i}")
+    else
+      where_clauses.push("parent IS NULL")
+    end
+    if properties[:name]
+      name_quoted = SQLite3::Database.quote(properties[:name])
+
+      where_clauses.push("name LIKE '#{name_quoted}'")
+    end
+
+    if where_clauses.empty?
+      result = @db.execute("SELECT * FROM directories;")
+    else
+      where_clause = where_clauses.join(" AND ")
+
+      result = @db.execute("SELECT * FROM directories WHERE #{where_clause};")
+    end
+
+    result.map! { |row| PasswordDirectory.create(row) }
+    result.sort! { |a,b| a.name <=> b.name }
+
+    return result
+  end
+
   def delete_directory(id)
     @db.execute("DELETE FROM directories WHERE id=#{id.to_i}")
   end

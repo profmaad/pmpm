@@ -211,6 +211,31 @@ class PasswordManagerShell < Cmd
   def do_find(args)
     options, args = extract_options(:find, args)
     return if options.nil?
+
+    if args.empty?
+      search_root = [""]
+    else
+      search_root = args[0].split("/")
+    end
+
+    search_path = construct_new_working_dir(search_root, true)
+    if search_path.nil?
+      puts "Search root doesn't exist"
+    else
+      properties = options.dup
+      properties[:parent] = (search_path.last.nil? ? nil : search_path.last.to_i)
+      properties[:directory] = properties[:parent]
+
+      if search_root.empty?
+        search_dir = "."
+      elsif search_root[0].empty?
+        search_dir = "#{search_root.join('/')}"
+      else
+        search_dir = "./#{search_root.join('/')}"
+      end
+
+      find(search_dir, properties)
+    end
   end
 
   doc :add, "Add a new node"
@@ -493,6 +518,27 @@ class PasswordManagerShell < Cmd
       @password_manager.save(new_directory)
     else
       puts "Directory already exists"
+    end
+  end
+  def find(search_dir, properties)
+    dir_props = Hash.new
+    dir_props[:parent] = properties[:parent]
+    dirs = @password_manager.find_directories(dir_props)
+    unless dirs.nil?
+      dirs.each do |dir|
+        new_props = properties.dup
+        new_props[:parent] = dir.to_i
+        new_props[:directory] = dir.to_i
+
+        find(search_dir + "/#{dir.name}", new_props)
+      end
+    end
+
+    nodes = @password_manager.find_nodes(properties)
+    unless nodes.nil?
+      nodes.each do |node|
+        puts "#{search_dir}/#{node.name}"
+      end
     end
   end
 
