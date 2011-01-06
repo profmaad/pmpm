@@ -87,7 +87,7 @@ class PasswordManagerShell < Cmd
   end
   doc :rmdir, "Remove empty directory"
   def do_rmdir(args)
-    options, args = extract_options(:mkdir, args)
+    options, args = extract_options(:rmdir, args)
     if args.empty?
       puts "No directory given"
     else
@@ -110,23 +110,26 @@ class PasswordManagerShell < Cmd
   end
   doc :rm, "Recursively remove directory or node"
   def do_rm(args)
-    if args.nil? or args.empty?
+    options, args = extract_options(:rm, args)
+    if args.empty?
       puts "No directory or node given"
     else
-      dirs = args.split("/")
-      new_dirs = construct_new_working_dir(dirs, false)
-      if new_dirs.nil?
-        puts "No such directory or node"
-      elsif new_dirs.last.nil? # last element of path was not a directory
-        new_dirs.pop
-        node = @password_manager.get_node(dirs.last, (new_dirs.last.nil? ? nil : new_dirs.last.to_i))
-        if node.nil?
-          puts "No such directory or node"
-        else
-          @password_manager.delete_node(node.id)
+      args.each do |arg|
+        dirs = arg.split("/")
+        new_dirs = construct_new_working_dir(dirs, false)
+        if new_dirs.nil?
+          puts "#{arg}: No such directory or node"
+        elsif new_dirs.last.nil? # last element of path was not a directory
+          new_dirs.pop
+          node = @password_manager.get_node(dirs.last, (new_dirs.last.nil? ? nil : new_dirs.last.to_i))
+          if node.nil?
+            puts "#{arg}: No such directory or node"
+          else
+            @password_manager.delete_node(node.id)
+          end
+        else # we need to recursively delete a directory
+          @password_manager.delete_recursively(new_dirs.last)
         end
-      else # we need to recursively delete a directory
-        @password_manager.delete_recursively(new_dirs.last)
       end
     end
   end
