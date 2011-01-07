@@ -10,7 +10,7 @@ So far this is just a simple password manager written in ruby.
  * data resides in simple sqlite3 database
  * uses SQLCipher for transparent encryption
  * interactive command-line interface
- * scriptable (should be, at least ^^)
+ * scriptable (should be, at least ^^ )
 
 ## Dependencies
 
