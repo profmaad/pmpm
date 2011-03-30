@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
   s.add_dependency("trollop", [">= 1.16.2"])
   s.add_dependency("cmd", [">= 0.7.2"])
   s.add_dependency("highline", [">= 1.6.1"])
-  s.add_dependency("password", [">= 0.5.3"])
+#  s.add_dependency("password", [">= 0.5.3"])
   s.add_dependency("sqlite3", [">= 1.2.4"])
   
   s.requirements << "SQLite 3, >= 3.7, sqlite.org"

@@ -1,6 +1,6 @@
 require 'rubygems'
 
-require 'password'
+#require 'password'
 require 'highline'
 
 require 'password_database.rb'

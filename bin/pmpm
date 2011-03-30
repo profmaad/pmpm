@@ -19,6 +19,7 @@ if options[:database]
 else
 	@db_file = "#{DEFAULT_DIR}/#{DEFAULT_DB}"
 end
+@db_file = File.expand_path(@db_file)
 
 @password_manager = PasswordManager.new(@db_file)
 
