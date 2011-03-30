@@ -325,6 +325,37 @@ class PasswordManagerShell < Cmd
   end
   shortcut 'cat', :show
 
+  def complete_ls(line)
+    last_slash = line.rindex("/")
+    if last_slash
+      dir = line[0,last_slash]
+      to_complete = line[last_slash+1..-1]
+    else
+      dir = ""
+      to_complete = line
+    end
+
+    dirs = construct_new_working_dir(dir.split("/"))
+    if dirs.nil?
+      puts "#{dir}:#{to_complete}"
+      return []
+    else
+      content = @password_manager.list_directory(dirs.last)
+      content_strings = content.map { |item| "#{dir}/#{item.name}" }
+      return completion_grep(content_strings, line)
+    end
+  end
+  alias :complete_ll :complete_ls
+  alias :complete_add :complete_ls
+  alias :complete_cd :complete_ls
+  alias :complete_edit :complete_ls
+  alias :complete_find :complete_ls
+  alias :complete_mkdir :complete_ls
+  alias :complete_mv :complete_ls
+  alias :complete_rm :complete_ls
+  alias :complete_rmdir :complete_ls
+  alias :complete_show :complete_ls
+
   protected
   def setup
     prompt_with { "#{self.class.name} #{working_dir_to_string}> " }
