@@ -5,6 +5,7 @@ require 'highline'
 require 'cmd'
 require 'trollop'
 require 'shellwords'
+require 'clipboard'
 
 require 'password_manager.rb'
 require 'password_directory.rb'
@@ -319,6 +320,7 @@ class PasswordManagerShell < Cmd
         else
           no_requested_values = (!options[:name] and !options[:url] and !options[:user] and !options[:pass] and !options[:email] and !options[:comment])
           print_node(node, (no_requested_values ? {} : options), options[:quiet])
+          Clipboard.copy(node.password) if options[:copy]
         end
       end
     end
@@ -400,14 +402,15 @@ class PasswordManagerShell < Cmd
       opt :batch, "batch mode (do not ask for data that was not given)", :short => '-b'
     end
     @method_options[:show] = Trollop::Parser.new do
-      banner "show [-q] NAME [-n/--name] [-U/--url] [-u/--user] [-p/--pass] [-e/--email] [-c/--comment]"
+      banner "show [-q] [--copy] NAME [-n/--name] [-U/--url] [-u/--user] [-p/--pass] [-e/--email] [-c/--comment]"
       opt :name, "print name", :short => '-n'
       opt :url, "print URL", :short => '-U'
       opt :user, "print username", :short => '-u'
       opt :pass, "print password", :short => '-p'
       opt :email, "print e-mail address", :short => '-e'
       opt :comment, "print comment", :short => '-c'
-      opt :quiet, "'quiet mode (do not print any labels)", :short => '-q'
+      opt :quiet, "quiet mode (do not print any labels)", :short => '-q'
+      opt :copy, "copy password to clipboard"
     end
   end
   def extract_options(method, args)
