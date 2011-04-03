@@ -16,6 +16,7 @@ Gem::Specification.new do |s|
   s.add_dependency("highline", [">= 1.6.1"])
 #  s.add_dependency("password", [">= 0.5.3"])
   s.add_dependency("sqlite3", [">= 1.2.4"])
+  s.add_dependency("clipboard", [">= 0.9.7"])
   
   s.requirements << "SQLite 3, >= 3.7, sqlite.org"
   s.requirements << "SQLCipher, >= 1.1, sqlcipher.net"
