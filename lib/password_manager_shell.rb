@@ -6,6 +6,7 @@ require 'cmd'
 require 'trollop'
 require 'shellwords'
 require 'clipboard'
+require 'rbconfig'
 
 require 'password_manager.rb'
 require 'password_directory.rb'
@@ -321,7 +322,7 @@ class PasswordManagerShell < Cmd
           no_requested_values = (!options[:name] and !options[:url] and !options[:user] and !options[:pass] and !options[:email] and !options[:comment])
           print_node(node, (no_requested_values ? {} : options), options[:quiet])
           Clipboard.copy(node.password) if options[:copy]
-          system("xdg-open #{node.url}") if options[:open]
+          open_url_in_browser(node.url) if options[:open]
         end
       end
     end
@@ -490,7 +491,16 @@ class PasswordManagerShell < Cmd
 
     return result
   end
-  
+
+  def open_url_in_browser(url)
+    if RbConfig::CONFIG['host_os'] =~ /mswin|windows|cygwin|mingw/i
+      system("start #{url}")
+    elsif RbConfig::CONFIG['host_os'] =~ /linux/i
+      system("xdg-open #{url}")
+    elsif RbConfig::CONFIG['host_os'] =~ /darwin/i
+      system("open #{url}")
+    end
+  end
 
   def ls(dirs, long = false, recursive = false)
     dirs_string = dirs.dup
